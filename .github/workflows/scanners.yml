@@ -91,4 +91,55 @@ jobs:
         with:
           name: clamdscan.txt
           path: clamdscan.txt
-          if-no-files-found: error 
+          if-no-files-found: error
+  sonarqube:
+    runs-on: ubuntu-latest
+    services:
+      sonarqube:
+        image: sonarqube:community
+        ports:
+          - 9000:9000
+        env:
+          SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: true
+        options: >-
+          --health-cmd "wget --no-verbose --tries=1 --spider http://localhost:9000/api/system/status || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 30
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Wait for SonarQube to be ready
+      run: |
+        until curl -s http://localhost:9000/api/system/status | grep -q '"status":"UP"'; do
+          echo "Waiting for SonarQube..."
+          sleep 5
+        done
+        echo "SonarQube is ready!"
+    - name: Create SonarQube project
+      run: |
+        # Login and get admin token (default credentials: admin/admin)
+        curl -u admin:admin -X POST "http://localhost:9000/api/user_tokens/generate?name=github-actions" \
+          | jq -r '.token' > sonar-token.txt
+        
+        SONAR_TOKEN=$(cat sonar-token.txt)
+        
+        # Create project
+        curl -u admin:admin -X POST \
+          "http://localhost:9000/api/projects/create?project=my-project&name=MyProject"
+        echo "SONAR_TOKEN=$SONAR_TOKEN" >> $GITHUB_ENV
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: 21
+        distribution: 'temurin'
+    - name: Run SonarQube Scanner
+      run: |
+        wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+        unzip -q sonar-scanner-cli-5.0.1.3006-linux.zip
+        ./sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner \
+          -Dsonar.projectKey=my-project \
+          -Dsonar.sources=. \
+          -Dsonar.host.url=http://localhost:9000 \
+          -Dsonar.token=${{ env.SONAR_TOKEN }}
