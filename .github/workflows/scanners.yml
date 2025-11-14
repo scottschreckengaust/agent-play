@@ -102,9 +102,9 @@ jobs:
         env:
           SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: true
           SONAR_WEB_PORT: 9000
-          SONAR_WEB_SYSTEMPASSCODE: ${{ github.token }}
+          SONAR_WEB_SYSTEMPASSCODE: dude
         options: >-
-          --health-cmd "(wget -qO- --header "X-Sonar-Passcode: ${{ github.token }}" "http://localhost:9000/api/system/health" | grep '{"health":"GREEN",') || exit 1"
+          --health-cmd "(wget -qO- --header 'X-Sonar-Passcode: dude' 'http://localhost:9000/api/system/health' | grep '{"health":"GREEN",') || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 30
