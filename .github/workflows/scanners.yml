@@ -70,7 +70,7 @@ jobs:
           --health-cmd "/usr/local/bin/clamdcheck.sh"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 120
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - run: timeout 300 bash -c  'until nc -z localhost 3310; do sleep 5; done'
