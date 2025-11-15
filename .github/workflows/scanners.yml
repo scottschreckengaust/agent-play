@@ -94,6 +94,8 @@ jobs:
           if-no-files-found: error
   sonarqube:
     runs-on: ubuntu-latest
+    env:
+      HEALTH_COMMAND: "wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*'| sed -e 's|\"}||' |{read status; echo \"\$status\"; if [ \"\$status\" = \"UP\" ]; then exit 0; else exit 1; fi }"
     services:
       sonarqube:
         image: sonarqube:community
@@ -104,7 +106,7 @@ jobs:
           SONAR_WEB_PORT: 9000
           SONAR_WEB_SYSTEMPASSCODE: dude
         options: >-
-          --health-cmd wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*' | sed -e 's|\"}||' | { read status; echo "\$status"; if [ "\$status" = "UP" ]; then exit 0; else exit 1; fi }
+          --health-cmd "${{ env.HEALTH_COMMAND }}"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 120
