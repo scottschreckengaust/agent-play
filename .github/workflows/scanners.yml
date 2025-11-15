@@ -106,7 +106,7 @@ jobs:
           SONAR_WEB_PORT: 9000
           SONAR_WEB_SYSTEMPASSCODE: dude
         options: >-
-          --health-cmd "${{ env.HEALTH_COMMAND }}"
+          --health-cmd "wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*'| sed -e 's|\"}||' |{read status_value; echo \"$status_value\"; if [ \"$status_value\" = \"UP\" ]; then exit 0; else exit 1; fi }"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 120
