@@ -95,7 +95,7 @@ jobs:
   sonarqube:
     runs-on: ubuntu-latest
     env:
-      HEALTH_COMMAND: "wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*'| sed -e 's|\"}||' |{read status; echo \"$status\"; if [ \"$status\" = \"UP\" ]; then exit 0; else exit 1; fi }"
+      HEALTH_COMMAND: "wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*'| sed -e 's|\"}||' |{read status; echo \"$status\" | tee /proc/1/fd/1; if [ \"$status\" = \"UP\" ]; then exit 0; else exit 1; fi }"
     services:
       sonarqube:
         image: sonarqube:community@sha256:48dd0e946ad6481dde43bb31d1a7af09c22f59be6399b195dcce7b87d82c5f40
