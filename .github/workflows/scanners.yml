@@ -98,18 +98,18 @@ jobs:
       HEALTH_COMMAND: "wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*'| sed -e 's|\"}||' |{read status; echo \"$status\"; if [ \"$status\" = \"UP\" ]; then exit 0; else exit 1; fi }"
     services:
       sonarqube:
-        image: sonarqube:community
+        image: sonarqube:community@sha256:48dd0e946ad6481dde43bb31d1a7af09c22f59be6399b195dcce7b87d82c5f40
         ports:
           - 9000:9000
         env:
           SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: true
           SONAR_WEB_PORT: 9000
-          SONAR_WEB_SYSTEMPASSCODE: dude
+          SONAR_WEB_SYSTEMPASSCODE: ${{ github.token }}
         options: >-
-          --health-cmd "wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*'| sed -e 's|\"}||' | tr -d '\n'"
+          --health-cmd "status=$$(wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*' | sed -e 's|\"}||' | tr -d '\n'); echo -n \"$$status\"; test \"$$status\" = \"UP\""
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 120
+          --health-retries 30
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       with:
@@ -134,7 +134,7 @@ jobs:
           "http://localhost:9000/api/projects/create?project=my-project&name=MyProject"
         echo "SONAR_TOKEN=$SONAR_TOKEN" >> $GITHUB_ENV
     - name: Set up JDK
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
       with:
         java-version: 21
         distribution: 'temurin'
