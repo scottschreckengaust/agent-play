@@ -160,5 +160,5 @@ jobs:
     - name: Get SAST Report
       run: |        
         curl --request GET \
-          --url 'http://locahost:9000/api/issues/gitlab_sast_export?projectKey=my-project' \
+          --url 'http://localhost:9000/api/issues/gitlab_sast_export?projectKey=my-project' \
           --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'  
