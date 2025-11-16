@@ -106,8 +106,7 @@ jobs:
           SONAR_WEB_PORT: 9000
           SONAR_WEB_SYSTEMPASSCODE: ${{ github.token }}
         options: >-
-          --health-cmd "status=\\$$(wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*' | sed -e 's|\"}||' | tr -d '\n'); echo -n \"\\$$status\"; test \"\\$$status\" = \"UP\""
-          --health-interval 10s
+          --health-cmd "status=\$(wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*' | sed -e 's|\"}||' | tr -d '\n'); echo -n   \"\$status\"; test \"\$status\" = \"UP\""          --health-interval 10s
           --health-timeout 5s
           --health-retries 30
     steps:
