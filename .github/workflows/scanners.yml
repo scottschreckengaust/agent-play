@@ -101,7 +101,6 @@ jobs:
           - 9000:9000
         env:
           SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: true
-          SONAR_WEB_PORT: 9000
           SONAR_WEB_SYSTEMPASSCODE: ${{ github.token }}
         options: >-
           --health-cmd "status=$(wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*' | sed -e 's|\"}||' | tr -d '\n'); echo -n \"$status\"; test \"$status\" = \"UP\""
@@ -109,14 +108,19 @@ jobs:
           --health-timeout 5s
           --health-retries 30
     steps:
-    - if: always()
-      run: |
-        docker inspect $(docker ps -qf "ancestor=sonarqube:community") | jq '.[] | {"test": .Config.Healthcheck.Test, "state": .State.Health}'
+    # - if: always()
+    #   run: |
+    #     docker inspect $(docker ps -qf "ancestor=sonarqube:community@sha256:48dd0e946ad6481dde43bb31d1a7af09c22f59be6399b195dcce7b87d82c5f40") | jq '.[] | {"test": .Config.Healthcheck.Test, "state": .State.Health}'
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       with:
         fetch-depth: 0
     - name: Wait for SonarQube to be ready
+      env:
+        SONAR_HOST: sonarqube
+        SONAR_PORT: job.services.sonarqube.ports[9000]
       run: |
+        echo "SonarQube Host: ${{ env.SONAR_HOST }}"
+        echo "SonarQube Port: ${{ env.SONAR_PORT }}"
         until curl -s http://localhost:9000/api/system/status | jq -r '.status' | grep -q 'UP'; do
           echo "Waiting for SonarQube..."
           sleep 5
@@ -124,16 +128,15 @@ jobs:
         echo "SonarQube is ready!"
     - name: Create SonarQube project
       run: |
-        # Login and get admin token (default credentials: admin/admin)
-        curl -u admin:admin -X POST "http://localhost:9000/api/user_tokens/generate?name=github-actions" \
-          | jq -r '.token' > sonar-token.txt
-        
-        SONAR_TOKEN=$(cat sonar-token.txt)
+        # Login and get token (default credentials: admin/admin)
+        SONAR_TOKEN=$(curl -u admin:admin -X POST "http://localhost:9000/api/user_tokens/generate?name=github-actions" \
+          | jq -r '.token')
+
+        echo "SONAR_TOKEN=$SONAR_TOKEN" >> $GITHUB_ENV
         
         # Create project
         curl -u admin:admin -X POST \
           "http://localhost:9000/api/projects/create?project=my-project&name=MyProject"
-        echo "SONAR_TOKEN=$SONAR_TOKEN" >> $GITHUB_ENV
 
     - name: Set up JDK
       uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
@@ -141,16 +144,21 @@ jobs:
         java-version: 21
         distribution: 'temurin'
     - name: Run SonarQube Scanner
+      env:
+        SONARSOURCE_CLI_VERSION: 7.3.0.5189
       run: |
         cd ${{ runner.temp }}
         # https://binaries.sonarsource.com/?prefix=Distribution/sonar-scanner-cli/
-        wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.3.0.5189-linux-x64.zip
-        unzip sonar-scanner-cli-7.3.0.5189-linux-x64.zip
+        wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${{ env.SONARSOURCE_CLI_VERSION }}-linux-x64.zip
+        unzip sonar-scanner-cli-${{ env.SONARSOURCE_CLI_VERSION }}-linux-x64.zip
         cd ${{ github.workspace }}
-        ls -alR ${{ runner.temp }}/sonar-scanner-7.3.0.5189-linux-x64/bin/
-
-        ${{ runner.temp }}/sonar-scanner-7.3.0.5189-linux-x64/bin/sonar-scanner \
+        ${{ runner.temp }}/sonar-scanner-${{ env.SONARSOURCE_CLI_VERSION }}-linux-x64/bin/sonar-scanner \
           -Dsonar.projectKey=my-project \
           -Dsonar.sources=. \
           -Dsonar.host.url=http://localhost:9000 \
           -Dsonar.token=${{ env.SONAR_TOKEN }}
+    - name: Get SAST Report
+      run: |        
+        curl --request GET \
+          --url 'http://locahost:9000/api/issues/gitlab_sast_export?projectKey=my-project' \
+          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'  
