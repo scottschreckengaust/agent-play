@@ -101,7 +101,7 @@ jobs:
           - 9000:9000
         env:
           SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: true
-          SONAR_WEB_SYSTEMPASSCODE: ${{ github.token }}
+          SONAR_WEB_SYSTEMPASSCODE: passcode
         options: >-
           --health-cmd "status=$(wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*' | sed -e 's|\"}||' | tr -d '\n'); echo -n \"$status\"; test \"$status\" = \"UP\""
           --health-interval 10s
@@ -158,7 +158,22 @@ jobs:
           -Dsonar.host.url=http://localhost:9000 \
           -Dsonar.token=${{ env.SONAR_TOKEN }}
     - name: Get SAST Report
-      run: |        
+      run: |
+        # documented way with system passcode
         curl --request GET \
-          --url 'http://localhost:9000/api/issues/gitlab_sast_export?projectKey=my-project' \
-          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'  
+          --url 'http://localhost:9000/api/system/health \
+          --header 'X-Sonar-Passcode: passcode'
+        # bearer token
+        curl --request GET \
+          --url 'http://localhost:9000/api/system/health \
+          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
+        # admin password
+        curl -u admin:admin --request GET \
+          --url 'http://localhost:9000/api/system/health \
+        # token user
+        curl -u ${{ env.SONAR_TOKEN }}: --request GET \
+          --url 'http://localhost:9000/api/system/health \
+          
+        curl --request GET \
+          --url 'http://localhost:9000/api/project_analyses/search?project=my-project' \
+          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
