@@ -125,7 +125,7 @@ jobs:
       run: |
         curl --silent --request GET \
           --url 'http://localhost:9000/api/server/version' \
-          --header 'X-Sonar-Passcode: passcode' | jq
+          --header 'X-Sonar-Passcode: passcode'
         curl --silent --request GET \
           --url 'http://localhost:9000/api/system/health' \
           --header 'X-Sonar-Passcode: passcode' | jq
