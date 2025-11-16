@@ -159,7 +159,7 @@ jobs:
           -Dsonar.token=${{ env.SONAR_TOKEN }}
     - name: Get SAST Report
       run: |
-        # documented way with system passcode
+        # system passcode
         curl --request GET \
           --url 'http://localhost:9000/api/system/health' \
           --header 'X-Sonar-Passcode: passcode'
@@ -167,13 +167,13 @@ jobs:
         curl --request GET \
           --url 'http://localhost:9000/api/system/health' \
           --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
-        # admin password
-        curl -u admin:admin --request GET \
-          --url 'http://localhost:9000/api/system/health' \
-        # token user
-        curl -u ${{ env.SONAR_TOKEN }}: --request GET \
-          --url 'http://localhost:9000/api/system/health' \
-          
+        
         curl --request GET \
-          --url 'http://localhost:9000/api/project_analyses/search?project=my-project' \
+          --url 'http://localhost:9000/api/projects/export_findings?project=my-project' \
           --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
+
+        curl --request GET \
+          --url 'http://localhost:9000/api/projects/export_findings?project=my-project' \
+          --header 'X-Sonar-Passcode: passcode'
+
+        # /api/measures/component
