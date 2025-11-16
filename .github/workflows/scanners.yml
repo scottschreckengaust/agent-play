@@ -121,6 +121,12 @@ jobs:
           sleep 5
         done
         echo "SonarQube is ready!"
+    - name: Get SonarQube token
+      run: |
+        # Login and get token (default credentials: admin/admin)
+        SONAR_TOKEN=$(curl -s -u admin:admin -X POST "http://localhost:9000/api/user_tokens/generate?name=github-actions" \
+          | jq -r '.token')
+        echo "SONAR_TOKEN=$SONAR_TOKEN" >> $GITHUB_ENV
     - name: SonarQube Info
       run: |
         curl --silent --request GET \
@@ -135,15 +141,11 @@ jobs:
 
     - name: Create SonarQube project
       run: |
-        # Login and get token (default credentials: admin/admin)
-        SONAR_TOKEN=$(curl -s -u admin:admin -X POST "http://localhost:9000/api/user_tokens/generate?name=github-actions" \
-          | jq -r '.token')
-
-        echo "SONAR_TOKEN=$SONAR_TOKEN" >> $GITHUB_ENV
-
         # Create project
-        curl -s -u admin:admin -X POST \
-          "http://localhost:9000/api/projects/create?project=my-project&name=MyProject"
+        curl --silent --request POST \
+          --url "http://localhost:9000/api/projects/create?project=my-project&name=MyProject" \
+          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
+
     # - name: Set up JDK
     #   uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
     #   with:
@@ -189,10 +191,10 @@ jobs:
     # Use the output from the Quality Gate in another step.
     # The possible outputs of the `quality-gate-status` variable are `PASSED`, `WARN`, or `FAILED`.
     - name: "Example show SonarQube Quality Gate Status value"
+      if: always()
       run: |
         echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
-        ls -lR
-        find . -name "report-task.txt"
+        find . -name "report-task.txt" -print0 | xargs -0 -I{} cat {}
 
     - name: Get SAST Report
       run: |
