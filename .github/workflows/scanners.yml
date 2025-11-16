@@ -129,6 +129,10 @@ jobs:
         curl --silent --request GET \
           --url 'http://localhost:9000/api/system/health' \
           --header 'X-Sonar-Passcode: passcode' | jq
+        curl --silent --request GET \
+          --url 'http://localhost:9000/api/system/info' \
+          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}' | jq
+
     - name: Create SonarQube project
       run: |
         # Login and get token (default credentials: admin/admin)
@@ -161,7 +165,7 @@ jobs:
     #       -Dsonar.token=${{ env.SONAR_TOKEN }}
           
           
-    - uses: SonarSource/sonarqube-scan-action@v6
+    - uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
       id: sonarqube-scan-action
       env:
         SONAR_HOST_URL: http://localhost:9000
@@ -175,7 +179,7 @@ jobs:
     
     # If you wish to fail your job when the Quality Gate is red, uncomment the
     # following lines. This would typically be used to fail a deployment.
-    - uses: SonarSource/sonarqube-quality-gate-action@v1
+    - uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.0
       id: sonarqube-quality-gate-check
       timeout-minutes: 5
       env:
@@ -185,13 +189,13 @@ jobs:
     # Use the output from the Quality Gate in another step.
     # The possible outputs of the `quality-gate-status` variable are `PASSED`, `WARN`, or `FAILED`.
     - name: "Example show SonarQube Quality Gate Status value"
-      run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+      run: |
+        echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+        ls -lR
+        find . -name "report-task.txt"
 
     - name: Get SAST Report
       run: |
         curl --silent --request GET \
           --url 'http://localhost:9000/api/projects/export_findings?project=my-project' \
-          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
-        curl --silent --request GET \
-          --url 'http://localhost:9000/api/system/info' \
           --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
