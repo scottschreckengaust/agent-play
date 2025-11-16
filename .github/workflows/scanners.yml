@@ -147,8 +147,10 @@ jobs:
         wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.3.0.5189-linux-x64.zip
         unzip sonar-scanner-cli-7.3.0.5189-linux-x64.zip
         cd ${{ github.workspace }}
-        ${{ runner.temp }}/sonar-scanner-cli-7.3.0.5189-linux-x64/bin/sonar-scanner \
-          -Dsonar.projectKey=my-project \
-          -Dsonar.sources=. \
-          -Dsonar.host.url=http://localhost:9000 \
-          -Dsonar.token=${{ env.SONAR_TOKEN }}
+        ls -alR ${{ runner.temp }}/sonar-scanner-7.3.0.5189-linux-x64/bin/
+
+        # ${{ runner.temp }}/sonar-scanner-cli-7.3.0.5189-linux-x64/bin/sonar-scanner \
+        #   -Dsonar.projectKey=my-project \
+        #   -Dsonar.sources=. \
+        #   -Dsonar.host.url=http://localhost:9000 \
+        #   -Dsonar.token=${{ env.SONAR_TOKEN }}
