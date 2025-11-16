@@ -116,16 +116,20 @@ jobs:
         fetch-depth: 0
     - name: Wait for SonarQube to be ready
       env:
-        SONAR_HOST: sonarqube
-        SONAR_PORT: job.services.sonarqube.ports[9000]
+        SONAR_HOST: ${{ sonarqube }}
+        SONAR_PORT: ${{ job.services.sonarqube.ports[9000] }}
       run: |
         echo "SonarQube Host: ${{ env.SONAR_HOST }}"
         echo "SonarQube Port: ${{ env.SONAR_PORT }}"
-        until curl -s http://localhost:9000/api/system/status | jq -r '.status' | grep -q 'UP'; do
+        until curl --silent http://localhost:9000/api/system/status | jq -r '.status' | grep -q 'UP'; do
           echo "Waiting for SonarQube..."
           sleep 5
         done
         echo "SonarQube is ready!"
+        curl --silent --request GET \
+          --url 'http://localhost:9000/api/system/health' \
+          --header 'X-Sonar-Passcode: passcode'
+
     - name: Create SonarQube project
       run: |
         # Login and get token (default credentials: admin/admin)
@@ -160,20 +164,13 @@ jobs:
     - name: Get SAST Report
       run: |
         # system passcode
-        curl --request GET \
-          --url 'http://localhost:9000/api/system/health' \
-          --header 'X-Sonar-Passcode: passcode'
         # bearer token
-        curl --request GET \
-          --url 'http://localhost:9000/api/system/health' \
+        curl --silent --request GET \
+          --url 'http://localhost:9000/api/server/version' \
           --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
         
-        curl --request GET \
+        curl --silent --request GET \
           --url 'http://localhost:9000/api/projects/export_findings?project=my-project' \
           --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
-
-        curl --request GET \
-          --url 'http://localhost:9000/api/projects/export_findings?project=my-project' \
-          --header 'X-Sonar-Passcode: passcode'
 
         # /api/measures/component
