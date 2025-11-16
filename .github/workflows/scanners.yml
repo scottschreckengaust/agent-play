@@ -129,21 +129,17 @@ jobs:
         curl --silent --request GET \
           --url 'http://localhost:9000/api/system/health' \
           --header 'X-Sonar-Passcode: passcode' | jq
-        curl --silent --request GET \
-          --url 'http://localhost:9000/api/system/info' \
-          --header 'X-Sonar-Passcode: passcode' | jq
     - name: Create SonarQube project
       run: |
         # Login and get token (default credentials: admin/admin)
-        SONAR_TOKEN=$(curl -u admin:admin -X POST "http://localhost:9000/api/user_tokens/generate?name=github-actions" \
+        SONAR_TOKEN=$(curl -s -u admin:admin -X POST "http://localhost:9000/api/user_tokens/generate?name=github-actions" \
           | jq -r '.token')
 
         echo "SONAR_TOKEN=$SONAR_TOKEN" >> $GITHUB_ENV
-        
-        # Create project
-        curl -u admin:admin -X POST \
-          "http://localhost:9000/api/projects/create?project=my-project&name=MyProject"
 
+        # Create project
+        curl -s -u admin:admin -X POST \
+          "http://localhost:9000/api/projects/create?project=my-project&name=MyProject"
     - name: Set up JDK
       uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
       with:
@@ -168,3 +164,23 @@ jobs:
         curl --silent --request GET \
           --url 'http://localhost:9000/api/projects/export_findings?project=my-project' \
           --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
+        curl --silent --request GET \
+          --url 'http://localhost:9000/api/system/info' \
+          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
+    - uses: SonarSource/sonarqube-scan-action@v6
+      env:
+        SONAR_HOST_URL: http://localhost:9000
+        SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+      with:
+        args: >
+          "-Dsonar.projectName=MyProject"
+          -Dsonar.projectKey=my-project
+          -Dsonar.sources=.
+          -Dsonar.verbose=true
+    # If you wish to fail your job when the Quality Gate is red, uncomment the
+    # following lines. This would typically be used to fail a deployment.
+    - uses: SonarSource/sonarqube-quality-gate-action@v1
+      timeout-minutes: 5
+      env:
+        SONAR_HOST_URL: http://localhost:9000
+        SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
