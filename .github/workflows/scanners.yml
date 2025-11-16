@@ -149,8 +149,8 @@ jobs:
         cd ${{ github.workspace }}
         ls -alR ${{ runner.temp }}/sonar-scanner-7.3.0.5189-linux-x64/bin/
 
-        # ${{ runner.temp }}/sonar-scanner-cli-7.3.0.5189-linux-x64/bin/sonar-scanner \
-        #   -Dsonar.projectKey=my-project \
-        #   -Dsonar.sources=. \
-        #   -Dsonar.host.url=http://localhost:9000 \
-        #   -Dsonar.token=${{ env.SONAR_TOKEN }}
+        ${{ runner.temp }}/sonar-scanner-7.3.0.5189-linux-x64/bin/sonar-scanner \
+          -Dsonar.projectKey=my-project \
+          -Dsonar.sources=. \
+          -Dsonar.host.url=http://localhost:9000 \
+          -Dsonar.token=${{ env.SONAR_TOKEN }}
