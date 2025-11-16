@@ -94,22 +94,29 @@ jobs:
           if-no-files-found: error
   sonarqube:
     runs-on: ubuntu-latest
-    env:
-      HEALTH_COMMAND: "wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*'| sed -e 's|\"}||' |{read status; echo \"$status\" | tee /proc/1/fd/1; if [ \"$status\" = \"UP\" ]; then exit 0; else exit 1; fi }"
     services:
       sonarqube:
-        image: sonarqube:community@sha256:48dd0e946ad6481dde43bb31d1a7af09c22f59be6399b195dcce7b87d82c5f40
+        image: sonarqube:community
+        # image: sonarqube:community@sha256:48dd0e946ad6481dde43bb31d1a7af09c22f59be6399b195dcce7b87d82c5f40
         ports:
           - 9000:9000
         env:
           SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: true
           SONAR_WEB_PORT: 9000
           SONAR_WEB_SYSTEMPASSCODE: ${{ github.token }}
+          # This is what works on the command-line...doesn't work with the options
+          #-health-cmd "status=\$(wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*' | sed -e 's|\"}||' | tr -d '\n'); echo -n \"\$status\"; test \"\$status\" = \"UP\""
+
         options: >-
-          --health-cmd "status=\$(wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*' | sed -e 's|\"}||' | tr -d '\n'); echo -n   \"\$status\"; test \"\$status\" = \"UP\""          --health-interval 10s
+          --health-cmd "status=\$(wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*' | sed -e 's|\"}||' | tr -d '\n'); echo -n \"\$status\"; test \"\$status\" = \"UP\""
+          --health-interval 10s
           --health-timeout 5s
           --health-retries 30
     steps:
+    - if: always()
+      run: |
+        docker inspect $(docker ps -qf "ancestor=sonarqube:community") | jq '.[] | {"test": .Config.Healthcheck.Test, "state": .State.Health}'
+
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       with:
         fetch-depth: 0
