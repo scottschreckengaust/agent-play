@@ -161,18 +161,18 @@ jobs:
       run: |
         # documented way with system passcode
         curl --request GET \
-          --url 'http://localhost:9000/api/system/health \
+          --url 'http://localhost:9000/api/system/health' \
           --header 'X-Sonar-Passcode: passcode'
         # bearer token
         curl --request GET \
-          --url 'http://localhost:9000/api/system/health \
+          --url 'http://localhost:9000/api/system/health' \
           --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
         # admin password
         curl -u admin:admin --request GET \
-          --url 'http://localhost:9000/api/system/health \
+          --url 'http://localhost:9000/api/system/health' \
         # token user
         curl -u ${{ env.SONAR_TOKEN }}: --request GET \
-          --url 'http://localhost:9000/api/system/health \
+          --url 'http://localhost:9000/api/system/health' \
           
         curl --request GET \
           --url 'http://localhost:9000/api/project_analyses/search?project=my-project' \
