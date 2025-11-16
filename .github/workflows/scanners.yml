@@ -140,34 +140,29 @@ jobs:
         # Create project
         curl -s -u admin:admin -X POST \
           "http://localhost:9000/api/projects/create?project=my-project&name=MyProject"
-    - name: Set up JDK
-      uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
-      with:
-        java-version: 21
-        distribution: 'temurin'
-    - name: Run SonarQube Scanner
-      env:
-        SONARSOURCE_CLI_VERSION: 7.3.0.5189
-      run: |
-        cd ${{ runner.temp }}
-        # https://binaries.sonarsource.com/?prefix=Distribution/sonar-scanner-cli/
-        wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${{ env.SONARSOURCE_CLI_VERSION }}-linux-x64.zip
-        unzip sonar-scanner-cli-${{ env.SONARSOURCE_CLI_VERSION }}-linux-x64.zip
-        cd ${{ github.workspace }}
-        ${{ runner.temp }}/sonar-scanner-${{ env.SONARSOURCE_CLI_VERSION }}-linux-x64/bin/sonar-scanner \
-          -Dsonar.projectKey=my-project \
-          -Dsonar.sources=. \
-          -Dsonar.host.url=http://localhost:9000 \
-          -Dsonar.token=${{ env.SONAR_TOKEN }}
-    - name: Get SAST Report
-      run: |
-        curl --silent --request GET \
-          --url 'http://localhost:9000/api/projects/export_findings?project=my-project' \
-          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
-        curl --silent --request GET \
-          --url 'http://localhost:9000/api/system/info' \
-          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
+    # - name: Set up JDK
+    #   uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+    #   with:
+    #     java-version: 21
+    #     distribution: 'temurin'
+    # - name: Run SonarQube Scanner
+    #   env:
+    #     SONARSOURCE_CLI_VERSION: 7.3.0.5189
+    #   run: |
+    #     cd ${{ runner.temp }}
+    #     # https://binaries.sonarsource.com/?prefix=Distribution/sonar-scanner-cli/
+    #     wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${{ env.SONARSOURCE_CLI_VERSION }}-linux-x64.zip
+    #     unzip sonar-scanner-cli-${{ env.SONARSOURCE_CLI_VERSION }}-linux-x64.zip
+    #     cd ${{ github.workspace }}
+    #     ${{ runner.temp }}/sonar-scanner-${{ env.SONARSOURCE_CLI_VERSION }}-linux-x64/bin/sonar-scanner \
+    #       -Dsonar.projectKey=my-project \
+    #       -Dsonar.sources=. \
+    #       -Dsonar.host.url=http://localhost:9000 \
+    #       -Dsonar.token=${{ env.SONAR_TOKEN }}
+          
+          
     - uses: SonarSource/sonarqube-scan-action@v6
+      id: sonarqube-scan-action
       env:
         SONAR_HOST_URL: http://localhost:9000
         SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
@@ -177,10 +172,26 @@ jobs:
           -Dsonar.projectKey=my-project
           -Dsonar.sources=.
           -Dsonar.verbose=true
+    
     # If you wish to fail your job when the Quality Gate is red, uncomment the
     # following lines. This would typically be used to fail a deployment.
     - uses: SonarSource/sonarqube-quality-gate-action@v1
+      id: sonarqube-quality-gate-check
       timeout-minutes: 5
       env:
         SONAR_HOST_URL: http://localhost:9000
         SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+    
+    # Use the output from the Quality Gate in another step.
+    # The possible outputs of the `quality-gate-status` variable are `PASSED`, `WARN`, or `FAILED`.
+    - name: "Example show SonarQube Quality Gate Status value"
+      run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+
+    - name: Get SAST Report
+      run: |
+        curl --silent --request GET \
+          --url 'http://localhost:9000/api/projects/export_findings?project=my-project' \
+          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
+        curl --silent --request GET \
+          --url 'http://localhost:9000/api/system/info' \
+          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
