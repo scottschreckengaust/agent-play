@@ -101,7 +101,7 @@ jobs:
           - 9000:9000
         env:
           SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: true
-          SONAR_WEB_SYSTEMPASSCODE: passcode
+          SONAR_WEB_SYSTEMPASSCODE: passcode # is it possible to make this dynamic?
         options: >-
           --health-cmd "status=$(wget -qO- http://localhost:9000/api/system/status | grep -oP '(?<=status\":\").*' | sed -e 's|\"}||' | tr -d '\n'); echo -n \"$status\"; test \"$status\" = \"UP\""
           --health-interval 10s
@@ -139,6 +139,7 @@ jobs:
           --url 'http://localhost:9000/api/system/info' \
           --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}' | jq
 
+    # TODO: Shouldn't the project be matching the repo and name?
     - name: Create SonarQube project
       run: |
         # Create project
@@ -183,7 +184,7 @@ jobs:
     # following lines. This would typically be used to fail a deployment.
     - uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.0
       id: sonarqube-quality-gate-check
-      timeout-minutes: 5
+      timeout-minutes: 5 # why 4 minutes?
       env:
         SONAR_HOST_URL: http://localhost:9000
         SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
@@ -196,9 +197,20 @@ jobs:
         echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
         find . -name "report-task.txt" -print0 | xargs -0 -I{} cat {}
 
-    - name: Get SAST Report
+    - name: Get Issues
       run: |
         curl --silent --request GET \
-          --url 'http://localhost:9000/api/projects/export_findings?project=my-project' \
-          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}'
+          --url 'http://localhost:9000/api/issues/search?componentKeys=my-project&ps=500&p=1' \
+          --header 'Authorization: Bearer ${{ env.SONAR_TOKEN }}' | tee sonar-issues.json | jq || exit 1
+    
+    - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+      if: always()
+      with:
+          name: sonar-issues.json
+          path: sonar-issues.json
+          if-no-files-found: error
+
+        # TODO: write a loop and write the JSON artifact out
+        # TODO: convert the artifact to a SARIF format
+        # http://localhost:9000/api/issues/search?componentKeys=AWS-Labs-MCP-Servers
         # https://next.sonarqube.com/sonarqube/web_api/api/project_analyses/search
